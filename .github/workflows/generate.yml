@@ -1,0 +1,56 @@
+name: Remote ProtoBuf Generation
+
+on:
+  push:
+    branches:
+      - main
+      - master 
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Generated Repo
+        uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.PAT_TOKEN }}
+
+      - name: Install Tools and Generate Code
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y protobuf-compiler
+          
+          go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+          go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+        
+          export PATH=$PATH:$(go env GOPATH)/bin
+          
+          git clone https://github.com/IK-akx/pharmacy-proto.git proto-repo
+          
+          if [ ! -f go.mod ]; then
+            go mod init github.com/${{ github.repository }}
+          fi
+
+          protoc --proto_path=proto-repo \
+            --go_out=. --go_grpc_out=. \
+            proto-repo/order/order.proto \
+            proto-repo/product/product.proto \
+            proto-repo/user/user.proto
+
+      - name: Push Generated Code
+        run: |
+          git config --global user.name "GitHub Action"
+          git config --global user.email "action@github.com"
+          
+          rm -rf proto-repo
+          
+          go mod tidy
+          
+          git add .
+ 
+          if [ -n "$(git status --porcelain)" ]; then
+            git commit -m "Auto-generate gRPC code for multi-services"
+            git push origin HEAD 
+          else
+            echo "No changes to commit"
+          fi
