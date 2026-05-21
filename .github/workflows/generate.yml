@@ -38,7 +38,8 @@ jobs:
           fi
 
           protoc --proto_path=proto-repo \
-            --go_out=. --go_grpc_out=. \
+            --go_out=. --go_opt=module=github.com/${{ github.repository }} \
+            --go-grpc_out=. --go-grpc_opt=module=github.com/${{ github.repository }} \
             proto-repo/order/order.proto \
             proto-repo/product/product.proto \
             proto-repo/user/user.proto
