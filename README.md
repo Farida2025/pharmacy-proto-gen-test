@@ -1,0 +1,1 @@
+# pharmacy-proto-gen-test
